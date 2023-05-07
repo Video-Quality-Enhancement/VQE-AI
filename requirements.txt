@@ -19,6 +19,7 @@ charset-normalizer==2.1.1
 colorama==0.4.6
 comm==0.1.2
 contourpy==1.0.6
+cupy-cuda112==10.6.0
 cycler==0.11.0
 debugpy==1.6.4
 decorator==5.1.1
@@ -27,6 +28,7 @@ entrypoints==0.4
 executing==1.2.0
 facexlib==0.2.5
 fastjsonschema==2.16.2
+fastrlock==0.8.1
 ffmpeg==1.4
 filterpy==1.4.5
 fonttools==4.38.0
@@ -101,6 +103,7 @@ pyparsing==3.0.9
 pyrsistent==0.19.2
 python-dateutil==2.8.2
 python-json-logger==2.0.4
+pytorch-ssim==0.1
 pytz==2022.6
 PyWavelets==1.4.1
 pywin32==305
