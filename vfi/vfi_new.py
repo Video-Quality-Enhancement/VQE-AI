@@ -54,7 +54,6 @@ class VFIModel(nn.Module):
         # Warp frame1 according to backward flow
         backward_warped_frame = F.grid_sample(frame1, backward_flow.permute(0, 2, 3, 1), align_corners=True)
 
-        # print(f'frame1: {frame1.shape}, frame2: {frame2.shape}, forward_warped_frame: {forward_warped_frame.shape}, backward_warped_frame: {backward_warped_frame.shape}')
         # print(f'frame1_resized: {frame1_resized.shape}, frame2_resized: {frame2_resized.shape}, \
         #       forward_warped_frame: {forward_warped_frame.shape}, backward_warped_frame: {backward_warped_frame.shape}, \
         #       forward_flow: {forward_flow.shape}, backward_flow: {backward_flow.shape}')
