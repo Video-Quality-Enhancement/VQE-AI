@@ -12,14 +12,15 @@ def create_window(window_size, channel):
     _1D_window = gaussian(window_size, 1.5).unsqueeze(1)
     _2D_window = _1D_window.mm(_1D_window.t()).float().unsqueeze(0).unsqueeze(0)
     window = Variable(_2D_window.expand(channel, 1, window_size, window_size))
-    return window
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    return window.to(device)
 
 def _ssim(img1, img2, window, window_size, channel, size_average=True):
     pad = int(window_size / 2)
 
     mu1 = F.conv2d(img1, window, padding=pad, groups=channel)
     mu2 = F.conv2d(img2, window, padding=pad, groups=channel)
-
+    
     mu1_sq, mu2_sq, mu1_mu2 = mu1.pow(2), mu2.pow(2), mu1 * mu2
 
     sigma1_sq = F.conv2d(img1 * img1, window, padding=pad, groups=channel) - mu1_sq
