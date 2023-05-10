@@ -99,7 +99,7 @@ class FlowNet(torch.nn.Module):
             # end
 
             def forward(self, tenInput):
-                tenOne = self.netOne(tenInput)
+                tenOne = self.netOne(tenInput.clone())
                 tenTwo = self.netTwo(tenOne)
                 tenThr = self.netThr(tenTwo)
                 tenFou = self.netFou(tenThr)
