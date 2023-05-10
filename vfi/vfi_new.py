@@ -28,38 +28,37 @@ class VFIModel(nn.Module):
         # self.upsample3 = nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1)
         # self.upsample4 = nn.ConvTranspose2d(64, 3, kernel_size=4, stride=2, padding=1)
 
-    def forward(self, x):
+    def forward(self, input):
         # Split into 2 input frames
-        frame1 = x[:, :3, :, :]
-        frame2 = x[:, 3:, :, :]
+        frame1 = input[:, :3, :, :].clone()
+        frame2 = input[:, 3:, :, :].clone()
 
-        print(f'frame1: {frame1.shape}, frame2: {frame2.shape}')
+        # print(f'frame1.size(): {frame1.size()}, frame2.size(): {frame2.size()}')
+        assert frame1.size() == frame2.size()
+        intWidth = frame1.size()[3]
+        intHeight = frame1.size()[2]
 
-        # Resize frame1 to match the size of forward_warped_frame
-        frame1_resized = F.interpolate(frame1, size=(128, 224), mode='bilinear', align_corners=False)
-
-        # Resize frame2 to match the size of backward_warped_frame
-        frame2_resized = F.interpolate(frame2, size=(128, 224), mode='bilinear', align_corners=False)
+        # print(f'intWidth: {intWidth}, intHeight: {intHeight}')size=(128, 224), mode='bilinear', align_corners=False)
 
         # Estimate optical flow in both directions
-        forward_flow = self.optical_flow(frame1, frame2)
-        backward_flow = self.optical_flow(frame2, frame1)
+        forward_flow = F.interpolate(self.optical_flow(frame1, frame2), size=(intHeight, intWidth), mode='bilinear', align_corners=False)
+        backward_flow = F.interpolate(self.optical_flow(frame2, frame1), size=(intHeight, intWidth), mode='bilinear', align_corners=False)
 
         # print(f'forward_flow: {forward_flow.shape}, permute: {forward_flow.permute(0, 2, 3, 1).shape}')
         # print(f'backward_flow: {backward_flow.shape}, permute: {backward_flow.permute(0, 2, 3, 1).shape}')
 
         # Warp frame2 according to forward flow
-        forward_warped_frame = F.grid_sample(frame2, forward_flow.permute(0, 2, 3, 1), align_corners=True)
+        forward_warped_frame = F.grid_sample(frame2, forward_flow.clone().permute(0, 2, 3, 1), align_corners=True)
 
         # Warp frame1 according to backward flow
-        backward_warped_frame = F.grid_sample(frame1, backward_flow.permute(0, 2, 3, 1), align_corners=True)
+        backward_warped_frame = F.grid_sample(frame1, backward_flow.clone().permute(0, 2, 3, 1), align_corners=True)
 
         # print(f'frame1_resized: {frame1_resized.shape}, frame2_resized: {frame2_resized.shape}, \
         #       forward_warped_frame: {forward_warped_frame.shape}, backward_warped_frame: {backward_warped_frame.shape}, \
         #       forward_flow: {forward_flow.shape}, backward_flow: {backward_flow.shape}')
 
         # Concatenate inputs, warped frames and flows
-        x = torch.cat([frame1_resized, frame2_resized, forward_warped_frame, backward_warped_frame, forward_flow, backward_flow], dim=1)
+        x = torch.cat([frame1, frame2, forward_warped_frame, backward_warped_frame, forward_flow, backward_flow], dim=1)
 
         # Pass through convolutional layers
         x = F.relu(self.conv1(x))
