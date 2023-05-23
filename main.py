@@ -6,61 +6,43 @@ import time
 from queue import Queue
 from threading import Thread
 import torch
+import gc
 
 from VideoESRGAN import esrgan
-from VideoRIFE import rife_model
+# from VideoRIFE import rife_model
+from GoogleFiLM import GoogleFiLM
 
 
-def frame_interpolation(vfiQ: Queue, enhanceQ: Queue):
+def frame_interpolation(vfiQ: Queue, resultQ: Queue):
     global ret
-    rife = rife_model()
-
+    # torch.set_default_tensor_type(torch.cuda.HalfTensor)
+    google_film = GoogleFiLM()
+    # time.sleep(60)
     frame1 = frame2 = None
 
-    # try:
-    frame_no = 0
-    while True:
-        frame2 = vfiQ.get()
-        frame_no += 1
-        print(f"interpolating_frame no. {frame_no}.. wait for some time...")
+    try:
+        frame_no = 0
+        while True:
+            frame2 = vfiQ.get()
+            frame_no += 1
 
-        if frame1 is None:
-            frame1 = frame2
-            enhanceQ.put(frame1)
-            continue
-        else:
-            intm_frame = rife.inference(frame1, frame2)
-            enhanceQ.put(intm_frame)
-            enhanceQ.put(frame2)
-    # except Exception as e:
-    #     print('\nframe_iterpolation stopped due to:', e)
-
-
-# def frame_interpolation(vfiQ: Queue, enhanceQ: Queue):
-#     global ret
-#     rife = rife_model()
-
-#     frame1 = frame2 = None
-
-#     # try:
-#     frame_no = 0
-#     while True:
-#         frame1 = vfiQ.get()
-#         frame2 = vfiQ.get()
-#         frame_no += 1
-#         print(f"interpolating_frame no. {frame_no} and {frame_no+1}.. wait for some time...")
-#         frame_no += 1
-#         intm_frame = rife.inference(frame1, frame2)
-#         enhanceQ.put(frame1)
-#         enhanceQ.put(intm_frame)
-#         enhanceQ.put(frame2)
-#     # except Exception as e:
-#     #     print('\nframe_iterpolation stopped due to:', e)
+            if frame1 is None:
+                frame1 = frame2
+                resultQ.put(frame1)
+                continue
+            else:
+                print(f"interpolating_frame no. {frame_no} and {frame_no+1}.. wait for some time...")
+                # print(f"frame1.shape: {frame1.shape}, frame2.shape: {frame2.shape}")
+                intm_frame = google_film.interpolate_frame(frame1, frame2)
+                resultQ.put(intm_frame)
+                resultQ.put(frame2)
+    except Exception as e:
+        print('\nframe_iterpolation stopped due to:', e)
 
 
-
-def frame_enhance(enhanceQ: Queue, resultQ: Queue):
+def frame_enhance(enhanceQ: Queue, vfiQ: Queue):
     global ret
+    # torch.set_default_tensor_type(torch.cuda.HalfTensor)
     esrgan_model = esrgan(gpu_id=0)
 
     try:
@@ -68,7 +50,7 @@ def frame_enhance(enhanceQ: Queue, resultQ: Queue):
         while True:
             frame = enhanceQ.get()
             output_frame = esrgan_model.enhance(frame)
-            resultQ.put(output_frame)
+            vfiQ.put(output_frame)
             cv2.imshow('enhanced', output_frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -116,8 +98,9 @@ if __name__ == '__main__':
 
     print(f'cuda:{0}' if torch.cuda.is_available() else 'cpu')
     # print(sorted(res), url)
+    # torch.set_default_tensor_type(torch.cuda.HalfTensor)
 
-    cam = cv2.VideoCapture("C:/Users/Ankit Das/Desktop/videoplayback.3gp")
+    cam = cv2.VideoCapture("videoplayback.3gp")
     # cam = cv2.VideoCapture(url)
     fps = cam.get(cv2.CAP_PROP_FPS)
     print(f'Frame Rate: {fps}fps')
