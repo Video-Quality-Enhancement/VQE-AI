@@ -69,9 +69,9 @@ def frame_enhance(enhanceQ: Queue, vfiQ: Queue):
             frame = enhanceQ.get()
             frame_id += 1
             output_frame = esrgan_model.enhance(frame)
-            height, width, _ = frame.shape
+            # height, width, _ = frame.shape
             # print(f"enhanced_frame.shape: {output_frame.shape}, type: {type(output_frame)}")
-            output_frame = cv2.resize(output_frame, (int(width/height *480), 480))
+            # output_frame = cv2.resize(output_frame, (int(width/height *480), 480))
             vfiQ.put(output_frame)
             cv2.imshow('enhanced', output_frame)
             cv2.waitKey(1)
@@ -106,7 +106,7 @@ def video_output(resultQ: Queue):
             # print(f"frame_no: {frame_no}")
 
             if video_out_writer is None:
-                video_out_writer = cv2.VideoWriter(f'{output_path}/enhanced_video.mp4', cv2.VideoWriter_fourcc(*'mp4v'), fps, (frame.shape[1], frame.shape[0]))
+                video_out_writer = cv2.VideoWriter(f'{output_path}/enhanced_video.mp4', cv2.VideoWriter_fourcc(*'mp4v'), fps*2, (frame.shape[1], frame.shape[0]))
 
             cv2.imwrite(f'{output_path}/frame{frame_no}.jpg', frame)
             video_out_writer.write(frame)
@@ -119,31 +119,30 @@ def video_output(resultQ: Queue):
 
 
 if __name__ == '__main__':
-    ret = True
-    video_urls = [
-        "https://www.youtube.com/watch?v=V9DWKbalbWQ",
-        "https://www.youtube.com/watch?v=QDX-1M5Nj7s",
-        "https://www.youtube.com/watch?v=IPfo1k2JyIg",
-        "https://www.youtube.com/watch?v=a2uKphzsjMo",
-        "https://www.youtube.com/watch?v=I1J2Z_Fgado",
-    ]
+    # video_urls = [
+    #     "https://www.youtube.com/watch?v=V9DWKbalbWQ",
+    #     "https://www.youtube.com/watch?v=QDX-1M5Nj7s",
+    #     "https://www.youtube.com/watch?v=IPfo1k2JyIg",
+    #     "https://www.youtube.com/watch?v=a2uKphzsjMo",
+    #     "https://www.youtube.com/watch?v=I1J2Z_Fgado",
+    # ]
 
-    url = video_urls[2]
-    video = pafy.new(url)
-    res = []
-    for s in video.streams:
-        # print(s.resolution, s.extension, s.get_filesize())
-        res.append(s.resolution)
-        url = s.url
-        break
-    print(sorted(res), url)
+    # url = video_urls[2]
+    # video = pafy.new(url)
+    # res = []
+    # for s in video.streams:
+    #     # print(s.resolution, s.extension, s.get_filesize())
+    #     res.append(s.resolution)
+    #     url = s.url
+    #     break
+    # print(sorted(res), url)
 
     print(f'cuda:{0}' if torch.cuda.is_available() else 'cpu')
     
     # torch.set_default_tensor_type(torch.cuda.HalfTensor)
 
-    # cam = cv2.VideoCapture("videoplayback.3gp")
-    cam = cv2.VideoCapture(url)
+    cam = cv2.VideoCapture("E:/Engineering/Capstone-Project/Datasets/TinyVIRAT/videos/train/VIRAT_S_000000/5570.mp4")
+    # cam = cv2.VideoCapture(url)
     fps = cam.get(cv2.CAP_PROP_FPS)
     print(f'Frame Rate: {fps}fps')
     print(f'Frame Size: {cam.get(cv2.CAP_PROP_FRAME_WIDTH)}x{cam.get(cv2.CAP_PROP_FRAME_HEIGHT)}')

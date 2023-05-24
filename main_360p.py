@@ -110,7 +110,7 @@ def video_output(resultQ: Queue):
             # print(f"frame_no: {frame_no}")
 
             if video_out_writer is None:
-                video_out_writer = cv2.VideoWriter(f'{output_path}/enhanced_video.mp4', cv2.VideoWriter_fourcc(*'mp4v'), fps, (frame.shape[1], frame.shape[0]))
+                video_out_writer = cv2.VideoWriter(f'{output_path}/enhanced_video.mp4', cv2.VideoWriter_fourcc(*'mp4v'), fps*2, (frame.shape[1], frame.shape[0]))
 
             cv2.imwrite(f'{output_path}/frame{frame_no}.jpg', frame)
             video_out_writer.write(frame)
