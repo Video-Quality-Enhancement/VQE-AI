@@ -13,7 +13,7 @@ from GoogleFiLM import google_film_model
 
 
 def frame_interpolation(vfiQ: Queue, enhanceQ: Queue):
-    global last_frame_id, video_processed
+    global last_frame_id, video_processed, no_of_frames_interpolated
     # torch.set_default_tensor_type(torch.cuda.HalfTensor)
     film_model = google_film_model()
     frame1 = frame2 = None
@@ -35,6 +35,7 @@ def frame_interpolation(vfiQ: Queue, enhanceQ: Queue):
                 # print(f"frame1.shape: {frame1.shape}, frame2.shape: {frame2.shape}")
                 start_time = time.time()
                 intm_frame = film_model.interpolate_frame(frame1, frame2)
+                no_of_frames_interpolated += 1
                 print(f"interpolation time: {time.time() - start_time}")
                 frame1 = frame2
                 # print(f"interpolated_frame.shape: {intm_frame.shape}, type: {type(intm_frame)}")
@@ -55,23 +56,25 @@ def frame_interpolation(vfiQ: Queue, enhanceQ: Queue):
         print('\nframe_iterpolation stopped due to:', e)
 
     cv2.destroyWindow('interpolated')
-    video_processed = True
 
 
 def frame_enhance(enhanceQ: Queue, resultQ: Queue):
-    global last_frame_id
+    global last_frame_id, video_processed, no_of_frames_interpolated
     # torch.set_default_tensor_type(torch.cuda.HalfTensor)
     esrgan_model = esrgan(gpu_id=0)
     frame_id = 0
     try:
         # while ret or not enhanceQ.not_empty:
-        while last_frame_id == -1 or frame_id < last_frame_id:
+        while last_frame_id == -1 or frame_id < (last_frame_id + no_of_frames_interpolated):
             frame = enhanceQ.get()
             frame_id += 1
+
+            start_time = time.time()
             output_frame = esrgan_model.enhance(frame)
-            height, width, _ = frame.shape
-            # print(f"enhanced_frame.shape: {output_frame.shape}, type: {type(output_frame)}")
-            output_frame = cv2.resize(output_frame, (int(width/height *480), 480))
+            print(f"Enhanced frame no. {frame_id} in {time.time() - start_time} seconds")
+
+            # height, width, _ = frame.shape
+            # output_frame = cv2.resize(output_frame, (int(width/height *480), 480))
             resultQ.put(output_frame)
             cv2.imshow('enhanced', output_frame)
             cv2.waitKey(1)
@@ -79,6 +82,8 @@ def frame_enhance(enhanceQ: Queue, resultQ: Queue):
         print('\nframe_enhance stopped due to:', e)
     del esrgan_model
     cv2.destroyWindow('enhanced')
+    
+    video_processed = True
 
 
 def video_output(resultQ: Queue):
@@ -163,20 +168,26 @@ if __name__ == '__main__':
     video_processed = False
 
     frame_id = 0
+    no_of_frames_interpolated = 0
     last_frame_id = -1
+
     try:
         while True:
             ret, frame = cam.read()
             if not ret:
                 break
-            frame_id += 1
+            
             vfiQ.put(frame)
             # enhanceQ.put(frame)
+            frame_id += 1
+
             cv2.imshow('original', frame)
             cv2.waitKey(1)
             print(frame_id, end=" ")
             # time.sleep(1/fps)
+
         last_frame_id = frame_id
+        
     except:
         ret = False
         cv2.destroyWindow('original')
