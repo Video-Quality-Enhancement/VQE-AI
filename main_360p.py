@@ -31,12 +31,10 @@ def frame_interpolation(vfiQ: Queue, enhanceQ: Queue):
                 cv2.imshow('interpolated', frame1)
                 continue
             else:
-                print(f"interpolating_frame no. {frame_id-1} and {frame_id}.. wait for some time...")
-                # print(f"frame1.shape: {frame1.shape}, frame2.shape: {frame2.shape}")
                 start_time = time.time()
                 intm_frame = film_model.interpolate_frame(frame1, frame2)
                 no_of_frames_interpolated += 1
-                print(f"interpolation time: {time.time() - start_time}")
+                print(f"Interpolated frame no. {frame_id-1} and {frame_id} in {time.time() - start_time} seconds")
                 frame1 = frame2
                 # print(f"interpolated_frame.shape: {intm_frame.shape}, type: {type(intm_frame)}")
                 # print(f"frame1.shape: {frame1.shape}, type: {type(frame1)}")
@@ -46,7 +44,6 @@ def frame_interpolation(vfiQ: Queue, enhanceQ: Queue):
                 cv2.waitKey(1)
                 cv2.imshow('interpolated', frame2)
 
-            
             cv2.waitKey(1)
             # print(f"last_frame_id == -1 or frame_id <= last_frame_id: {last_frame_id == -1 or frame_id <= last_frame_id}")
 
@@ -187,7 +184,7 @@ if __name__ == '__main__':
             # time.sleep(1/fps)
 
         last_frame_id = frame_id
-        
+
     except:
         ret = False
         cv2.destroyWindow('original')
