@@ -47,7 +47,7 @@ def frame_interpolation(vfiQ: Queue, enhanceQ: Queue):
             cv2.waitKey(1)
             # print(f"last_frame_id == -1 or frame_id <= last_frame_id: {last_frame_id == -1 or frame_id <= last_frame_id}")
 
-        print("frame_interpolation completed")
+        print("Frame Interpolation Completed")
 
     except Exception as e:
         print('\nframe_iterpolation stopped due to:', e)
@@ -75,6 +75,8 @@ def frame_enhance(enhanceQ: Queue, resultQ: Queue):
             resultQ.put(output_frame)
             cv2.imshow('enhanced', output_frame)
             cv2.waitKey(1)
+
+        print("Frame Enhancement Completed")
     except Exception as e:
         print('\nframe_enhance stopped due to:', e)
     del esrgan_model
