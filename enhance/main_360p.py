@@ -129,18 +129,21 @@ def main(url: str, request_id: str):
     global video_processed, last_frame_id, no_of_frames_interpolated, fps, enhanced_video_url
     # torch.set_default_tensor_type(torch.cuda.HalfTensor)
 
-    # cam = cv2.VideoCapture("enhance/test_videoplayback.mp4")
-    cam = cv2.VideoCapture(url)
-    fps = cam.get(cv2.CAP_PROP_FPS)
+    # cap = cv2.VideoCapture("enhance/test_videoplayback.mp4")
+    cap = cv2.VideoCapture(url)
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    video_duration = cap.get(cv2.CAP_PROP_FRAME_COUNT) / fps
     print(f'Frame Rate: {fps}fps')
-    print(f'Frame Size: {cam.get(cv2.CAP_PROP_FRAME_WIDTH)}x{cam.get(cv2.CAP_PROP_FRAME_HEIGHT)}')
+    print(f'Frame Size: {cap.get(cv2.CAP_PROP_FRAME_WIDTH)}x{cap.get(cv2.CAP_PROP_FRAME_HEIGHT)}')
+    print(f"Total no. of frames: {cap.get(cv2.CAP_PROP_FRAME_COUNT)}")
+    print(f"Video Duration: {video_duration} seconds")
 
     video_processed = False
     enhanced_video_url = None
 
     frame_id = 0
     no_of_frames_interpolated = 0
-    last_frame_id = -1
+    last_frame_id = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
     vfiQ = Queue()
     enhanceQ = Queue()
@@ -154,10 +157,11 @@ def main(url: str, request_id: str):
     p2.start()
     p3.start()
 
+    start_time = time.time()
 
     try:
         while True:
-            ret, frame = cam.read()
+            ret, frame = cap.read()
             if not ret:
                 break
             
@@ -170,14 +174,10 @@ def main(url: str, request_id: str):
             print(frame_id, end=" ")
             # time.sleep(1/fps)
 
-        last_frame_id = frame_id
-
     except:
         ret = False
         cv2.destroyWindow('original')
         print("Feed Ended or Error occured")
-
-    print(f"last_frame_id: {last_frame_id}")
 
     cv2.destroyWindow('original')
     
@@ -185,6 +185,8 @@ def main(url: str, request_id: str):
     p1.join()
     p2.join()
     p3.join()
+
+    print(f"Video Duration: {video_duration} seconds, Time taken to enhance: {time.time() - start_time} seconds")
 
     # sys.exit(0)
     return enhanced_video_url, "success", "Video enhanced successfully"
