@@ -145,6 +145,11 @@ def main(url: str, request_id: str):
         print(f"Exception: {e}")
         return None, "failed", "Video enhancement failed due to invalid url"
     
+    interpolate = True
+    if fps > 35:
+        interpolate = False
+
+    
     # Create a directory to store the audio
     audio_path = f'enhance/.temp/{request_id}/audio'
     os.makedirs(audio_path, exist_ok=True)
@@ -160,13 +165,23 @@ def main(url: str, request_id: str):
     enhanceQ = Queue()
     resultQ = Queue()
 
-    p1 = Thread(target=frame_enhance, args=(enhanceQ, vfiQ), daemon=True)
-    p2 = Thread(target=frame_interpolation, args=(vfiQ, resultQ,), daemon=True)
-    p3 = Thread(target=video_output, args=(resultQ, request_id), daemon=True)
+    if interpolate:
+        p1 = Thread(target=frame_enhance, args=(enhanceQ, vfiQ), daemon=True)
+        p2 = Thread(target=frame_interpolation, args=(vfiQ, resultQ,), daemon=True)
+        p3 = Thread(target=video_output, args=(resultQ, request_id), daemon=True)
 
-    p1.start()
-    p2.start()
-    p3.start()
+        p1.start()
+        p2.start()
+        p3.start()
+    
+    else:
+        p1 = Thread(target=frame_interpolation, args=(vfiQ, enhanceQ,), daemon=True)
+        p2 = Thread(target=frame_enhance, args=(enhanceQ, resultQ), daemon=True)
+        p3 = Thread(target=video_output, args=(resultQ, request_id), daemon=True)
+
+        # p1.start()
+        p2.start()
+        p3.start()
 
     start_time = time.time()
 
