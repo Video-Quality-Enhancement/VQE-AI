@@ -1,70 +1,65 @@
 import os
 import cv2
-import pafy
-import sys
 import time
+import subprocess
 from queue import Queue
 from threading import Thread
-import torch
 
 from .VideoESRGAN import esrgan
-# from VideoRIFE import rife_model
 from .GoogleFiLM import google_film_model
 
 from .drive import upload_file
 
 
 def frame_interpolation(vfiQ: Queue, enhanceQ: Queue):
-    global last_frame_id, video_processed, no_of_frames_interpolated
+    global total_frames
     # torch.set_default_tensor_type(torch.cuda.HalfTensor)
     film_model = google_film_model()
     frame1 = frame2 = None
 
     frame_id = 0
     try:
-        while last_frame_id == -1 or frame_id < last_frame_id:
-            # print(f"last_frame_id: {last_frame_id}, frame_id: {frame_id}")
+        while frame_id < total_frames:
+            # print(f"total_frames: {total_frames}, frame_id: {frame_id}")
             frame2 = vfiQ.get()
             frame_id += 1
 
             if frame1 is None:
                 frame1 = frame2
                 enhanceQ.put(frame1)
-                cv2.imshow('interpolated', frame1)
+                # cv2.imshow('interpolated', frame1)
                 continue
             else:
                 start_time = time.time()
                 intm_frame = film_model.interpolate_frame(frame1, frame2)
-                no_of_frames_interpolated += 1
-                print(f"Interpolated frame no. {frame_id-1} and {frame_id} in {time.time() - start_time} seconds")
+                # print(f"Interpolated frame no. {frame_id-1} and {frame_id} in {time.time() - start_time} seconds")
                 frame1 = frame2
                 # print(f"interpolated_frame.shape: {intm_frame.shape}, type: {type(intm_frame)}")
                 # print(f"frame1.shape: {frame1.shape}, type: {type(frame1)}")
                 enhanceQ.put(intm_frame)
                 enhanceQ.put(frame2)
-                cv2.imshow('interpolated', intm_frame)
-                cv2.waitKey(1)
-                cv2.imshow('interpolated', frame2)
+                # cv2.imshow('interpolated', intm_frame)
+                # cv2.waitKey(1)
+                # cv2.imshow('interpolated', frame2)
 
-            cv2.waitKey(1)
-            # print(f"last_frame_id == -1 or frame_id <= last_frame_id: {last_frame_id == -1 or frame_id <= last_frame_id}")
+            # cv2.waitKey(1)
 
         print("Frame Interpolation Completed")
 
     except Exception as e:
         print('\nframe_iterpolation stopped due to:', e)
 
-    cv2.destroyWindow('interpolated')
+    # cv2.destroyWindow('interpolated')
 
 
 def frame_enhance(enhanceQ: Queue, resultQ: Queue):
-    global last_frame_id, video_processed, no_of_frames_interpolated
+    global total_frames
     # torch.set_default_tensor_type(torch.cuda.HalfTensor)
     esrgan_model = esrgan(gpu_id=0)
     frame_id = 0
     try:
         # while ret or not enhanceQ.not_empty:
-        while last_frame_id == -1 or frame_id < (last_frame_id + no_of_frames_interpolated):
+        while frame_id < ((total_frames * 2) - 1):
             frame = enhanceQ.get()
             frame_id += 1
 
@@ -75,75 +70,93 @@ def frame_enhance(enhanceQ: Queue, resultQ: Queue):
             # height, width, _ = frame.shape
             # output_frame = cv2.resize(output_frame, (int(width/height *480), 480))
             resultQ.put(output_frame)
-            cv2.imshow('enhanced', output_frame)
-            cv2.waitKey(1)
+            # cv2.imshow('enhanced', output_frame)
+            # cv2.waitKey(1)
 
         print("Frame Enhancement Completed")
     except Exception as e:
         print('\nframe_enhance stopped due to:', e)
-    del esrgan_model
-    cv2.destroyWindow('enhanced')
     
-    video_processed = True
+    del esrgan_model
+    
+    # cv2.destroyWindow('enhanced')
 
 
 def video_output(resultQ: Queue, request_id: str):
-    global video_processed, fps, enhanced_video_url
+    global fps, enhanced_video_url, total_frames
+    
+    # Create a directory to store the enhanced video
+    output_path = f'enhance/.temp/{request_id}/video'
+    os.makedirs(output_path, exist_ok=True)
 
-    i = 0
-    output_path = f'enhance/output/output-{i}'
-    # Create a directory to store the frames
-    while os.path.exists(output_path):
-        i += 1
-        output_path = f'enhance/output/output-{i}'
-
-    os.makedirs(output_path)
+    enhance_fname = f'{output_path}/enhanced.mp4'
     filename = f'{output_path}/{request_id}.mp4'
 
+    audio_path = f'enhance/.temp/{request_id}/audio/{request_id}.m4a'
+
     video_out_writer = None
-    
+
     try:
         frame_no = 0
         print("Writing frames to video...")
-        print(f"resultQ.empty(): {resultQ.empty()}, video_processed: {video_processed}")
-        while video_processed is False or not resultQ.empty():
+        # print(f"resultQ.empty(): {resultQ.empty()}, frame_no: {frame_no}, total_frames: {total_frames}")
+        while frame_no < ((total_frames * 2) - 1) or not resultQ.empty():
             frame = resultQ.get()
             frame_no += 1
             # print(f"frame_no: {frame_no}")
 
             if video_out_writer is None:
-                video_out_writer = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'mp4v'), fps*2, (frame.shape[1], frame.shape[0]))
+                video_out_writer = cv2.VideoWriter(enhance_fname, cv2.VideoWriter_fourcc(
+                    *'mp4v'), fps*2, (frame.shape[1], frame.shape[0]))
 
-            cv2.imwrite(f'{output_path}/frame{frame_no}.jpg', frame)
+            # cv2.imwrite(f'{output_path}/frame{frame_no}.jpg', frame)
             video_out_writer.write(frame)
 
     except Exception as e:
         print('\nvideo_output stopped due to:', e)
 
     video_out_writer.release()
+
+    # merge the audio and video
+    print("Merging audio and video...")
+    subprocess.run(
+        f'ffmpeg -y -i {enhance_fname} -i {audio_path} -c:v copy -c:a copy -map 0:v:0 -map 1:a:0 -shortest {filename}', shell=True)
+
     enhanced_video_url = upload_file.upload_file(filename)
     print("Video Enhancement Completed..!!")
 
 
 def main(url: str, request_id: str):
-    global video_processed, last_frame_id, no_of_frames_interpolated, fps, enhanced_video_url
+    global fps, total_frames, enhanced_video_url
     # torch.set_default_tensor_type(torch.cuda.HalfTensor)
 
-    # cap = cv2.VideoCapture("enhance/test_videoplayback.mp4")
-    cap = cv2.VideoCapture(url)
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    video_duration = cap.get(cv2.CAP_PROP_FRAME_COUNT) / fps
-    print(f'Frame Rate: {fps}fps')
-    print(f'Frame Size: {cap.get(cv2.CAP_PROP_FRAME_WIDTH)}x{cap.get(cv2.CAP_PROP_FRAME_HEIGHT)}')
-    print(f"Total no. of frames: {cap.get(cv2.CAP_PROP_FRAME_COUNT)}")
-    print(f"Video Duration: {video_duration} seconds")
+    try:
+        # cap = cv2.VideoCapture("enhance/test_videoplayback.mp4")
+        cap = cv2.VideoCapture(url)
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        frame_size = (cap.get(cv2.CAP_PROP_FRAME_WIDTH),
+                      cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        total_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+        print(f'Frame Rate: {fps}fps')
+        print(f'Frame Size: {frame_size}')
+        print(f"Total no. of frames: {total_frames}")
 
-    video_processed = False
+        video_duration = total_frames / fps
+        print(f"Video Duration: {video_duration} seconds")
+    except Exception as e:
+        print(f"Exception: {e}")
+        return None, "failed", "Video enhancement failed due to invalid url"
+    
+    # Create a directory to store the audio
+    audio_path = f'enhance/.temp/{request_id}/audio'
+    os.makedirs(audio_path, exist_ok=True)
+
+    # get the audio stream using ffmpeg
+    subprocess.Popen(f'ffmpeg -y -i {url} -vn -acodec copy {audio_path}/{request_id}.m4a', shell=True)
+
     enhanced_video_url = None
 
     frame_id = 0
-    no_of_frames_interpolated = 0
-    last_frame_id = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
     vfiQ = Queue()
     enhanceQ = Queue()
@@ -164,53 +177,52 @@ def main(url: str, request_id: str):
             ret, frame = cap.read()
             if not ret:
                 break
-            
+
             vfiQ.put(frame)
             # enhanceQ.put(frame)
             frame_id += 1
 
-            cv2.imshow('original', frame)
-            cv2.waitKey(1)
+            # cv2.imshow('original', frame)
+            # cv2.waitKey(1)
             print(frame_id, end=" ")
             # time.sleep(1/fps)
 
     except:
-        ret = False
-        cv2.destroyWindow('original')
+        # cv2.destroyWindow('original')
         print("Feed Ended or Error occured")
 
-    cv2.destroyWindow('original')
-    
+    # cv2.destroyWindow('original')
 
     p1.join()
     p2.join()
     p3.join()
 
-    print(f"Video Duration: {video_duration} seconds, Time taken to enhance: {time.time() - start_time} seconds")
+    print(
+        f"Video Duration: {video_duration} seconds, Time taken to enhance: {time.time() - start_time} seconds")
 
     # sys.exit(0)
     return enhanced_video_url, "success", "Video enhanced successfully"
 
 
-if __name__ == '__main__':
-    video_urls = [
-        "https://www.youtube.com/watch?v=V9DWKbalbWQ",
-        "https://www.youtube.com/watch?v=QDX-1M5Nj7s",
-        "https://www.youtube.com/watch?v=IPfo1k2JyIg",
-        "https://www.youtube.com/watch?v=a2uKphzsjMo",
-        "https://www.youtube.com/watch?v=I1J2Z_Fgado",
-    ]
+# if __name__ == '__main__':
+#     video_urls = [
+#         "https://www.youtube.com/watch?v=V9DWKbalbWQ",
+#         "https://www.youtube.com/watch?v=QDX-1M5Nj7s",
+#         "https://www.youtube.com/watch?v=IPfo1k2JyIg",
+#         "https://www.youtube.com/watch?v=a2uKphzsjMo",
+#         "https://www.youtube.com/watch?v=I1J2Z_Fgado",
+#     ]
 
-    url = video_urls[2]
-    video = pafy.new(url)
-    res = []
-    for s in video.streams:
-        # print(s.resolution, s.extension, s.get_filesize())
-        res.append(s.resolution)
-        url = s.url
-        break
-    print(sorted(res), url)
+#     url = video_urls[2]
+#     video = pafy.new(url)
+#     res = []
+#     for s in video.streams:
+#         # print(s.resolution, s.extension, s.get_filesize())
+#         res.append(s.resolution)
+#         url = s.url
+#         break
+#     print(sorted(res), url)
 
-    print(f'cuda:{0}' if torch.cuda.is_available() else 'cpu')
+#     print(f'cuda:{0}' if torch.cuda.is_available() else 'cpu')
 
-    main(url=url)
+#     main(url=url)

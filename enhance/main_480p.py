@@ -11,7 +11,7 @@ from .GoogleFiLM import google_film_model
 from .drive import upload_file
 
 
-def frame_interpolation(vfiQ: Queue, resultQ: Queue):
+def frame_interpolation(vfiQ: Queue, enhanceQ: Queue):
     global total_frames
     # torch.set_default_tensor_type(torch.cuda.HalfTensor)
     film_model = google_film_model()
@@ -25,17 +25,17 @@ def frame_interpolation(vfiQ: Queue, resultQ: Queue):
 
             if frame1 is None:
                 frame1 = frame2
-                resultQ.put(frame1)
+                enhanceQ.put(frame1)
                 # cv2.imshow('interpolated', frame1)
                 continue
             else:
                 start_time = time.time()
                 intm_frame = film_model.interpolate_frame(frame1, frame2)
                 print(f"Interpolated frame no. {frame_id-1} and {frame_id} in {time.time() - start_time} seconds")
-                
+
                 frame1 = frame2
-                resultQ.put(intm_frame)
-                resultQ.put(frame2)
+                enhanceQ.put(intm_frame)
+                enhanceQ.put(frame2)
                 # cv2.imshow('interpolated', intm_frame)
                 # cv2.waitKey(1)
                 # cv2.imshow('interpolated', frame2)
@@ -50,7 +50,7 @@ def frame_interpolation(vfiQ: Queue, resultQ: Queue):
     # cv2.destroyWindow('interpolated')
 
 
-def frame_enhance(enhanceQ: Queue, vfiQ: Queue):
+def frame_enhance(enhanceQ: Queue, resultQ: Queue):
     global total_frames
     # torch.set_default_tensor_type(torch.cuda.HalfTensor)
     esrgan_model = esrgan(gpu_id=0)
@@ -65,35 +65,32 @@ def frame_enhance(enhanceQ: Queue, vfiQ: Queue):
             output_frame = esrgan_model.enhance(frame)
             print(f"Enhanced frame no. {frame_id} in {time.time() - start_time} seconds")
 
-            height, width, _ = frame.shape
-            max_height = 480
-            output_frame = cv2.resize(output_frame, (int(width/height *max_height), max_height))
-            vfiQ.put(output_frame)
+            # height, width, _ = frame.shape
+            # output_frame = cv2.resize(output_frame, (int(width/height *480), 480))
+            resultQ.put(output_frame)
             # cv2.imshow('enhanced', output_frame)
             # cv2.waitKey(1)
 
         print("Frame Enhancement Completed")
     except Exception as e:
         print('\nframe_enhance stopped due to:', e)
+
     del esrgan_model
+    
     # cv2.destroyWindow('enhanced')
 
 
 def video_output(resultQ: Queue, request_id: str):
-    global fps, enhanced_video_url
+    global fps, enhanced_video_url, total_frames
 
-    i = 0
-    output_path = f'enhance/output/output-{i}'
-    # Create a directory to store the frames
-    while os.path.exists(output_path):
-        i += 1
-        output_path = f'enhance/output/output-{i}'
+    # Create a directory to store the enhanced video
+    output_path = f'enhance/.temp/{request_id}/video'
+    os.makedirs(output_path, exist_ok=True)
 
-    os.makedirs(output_path)
     enhance_fname = f'{output_path}/enhanced.mp4'
     filename = f'{output_path}/{request_id}.mp4'
 
-    audio_path = f'enhance/.temp/audio/{request_id}.m4a'
+    audio_path = f'enhance/.temp/{request_id}/audio/{request_id}.m4a'
 
     video_out_writer = None
 
@@ -161,8 +158,8 @@ def main(url: str, request_id: str):
     enhanceQ = Queue()
     resultQ = Queue()
 
-    p1 = Thread(target=frame_enhance, args=(enhanceQ, vfiQ), daemon=True)
-    p2 = Thread(target=frame_interpolation, args=(vfiQ, resultQ,), daemon=True)
+    p1 = Thread(target=frame_interpolation, args=(vfiQ, enhanceQ,), daemon=True)
+    p2 = Thread(target=frame_enhance, args=(enhanceQ, resultQ), daemon=True)
     p3 = Thread(target=video_output, args=(resultQ, request_id), daemon=True)
 
     p1.start()
@@ -177,8 +174,8 @@ def main(url: str, request_id: str):
             if not ret:
                 break
 
-            # vfiQ.put(frame)
-            enhanceQ.put(frame)
+            vfiQ.put(frame)
+            # enhanceQ.put(frame)
             frame_id += 1
 
             # cv2.imshow('original', frame)
