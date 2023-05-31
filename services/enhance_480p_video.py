@@ -1,13 +1,13 @@
 import time
 from models import VideoEnhanceRequest
 from models import EnhancedVideoResponse
-from enhance import main_360p
+from enhance import main_480p
 
-def enhance_360p_video(video_enhance_request: VideoEnhanceRequest) -> EnhancedVideoResponse:
+def enhance_480p_video(video_enhance_request: VideoEnhanceRequest) -> EnhancedVideoResponse:
     print(video_enhance_request)
     
     try:
-        enhanced_video_url, status, statusMessage = main_360p.main(video_enhance_request.videoUrl, video_enhance_request.requestId)
+        enhanced_video_url, status, statusMessage = main_480p.main(video_enhance_request.videoUrl, video_enhance_request.requestId)
     except Exception as e:
         enhanced_video_url = None
         status = "failed"
