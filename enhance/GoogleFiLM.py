@@ -37,8 +37,8 @@ class google_film_model:
 
     def interpolate_frame(self, frame1, frame2):
         # Convert the images to grayscale
-        gray1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
-        gray2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
+        gray1 = cv2.cvtColor(frame1, cv2.COLOR_RGB2GRAY)
+        gray2 = cv2.cvtColor(frame2, cv2.COLOR_RGB2GRAY)
 
         # Calculate the SSIM between the two images
         similarity = ssim(gray1, gray2)
