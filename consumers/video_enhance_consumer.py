@@ -14,7 +14,7 @@ def video_enhance_consumer(queue_name: str, routing_key: str, enhance_video: cal
     exchange = "video.enhance"
     consumerCh.exchange_declare(exchange=exchange, exchange_type="direct", durable=True)
 
-    result = consumerCh.queue_declare(queue=queue_name, durable=True)
+    result = consumerCh.queue_declare(queue=queue_name, durable=True,  arguments={'x-consumer-timeout': 43200000}) # 12 hours
 
     consumerCh.queue_bind(exchange=exchange, queue=result.method.queue, routing_key=routing_key)
 
@@ -36,7 +36,6 @@ def video_enhance_consumer(queue_name: str, routing_key: str, enhance_video: cal
 
         process_thread = threading.Thread(target=process_request, args=(ch, delivery_tag, video_enhance_request,), daemon=True)
         process_thread.start()
-        
                 
     consumerCh.basic_consume(queue=result.method.queue, on_message_callback=callback)
 
