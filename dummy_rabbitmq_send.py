@@ -10,7 +10,7 @@ dotenv.load_dotenv()
 
 url = "https://drive.google.com/uc?id=1yczEIQHc14jc0B412eB5JlouGLU4sobJ"
 
-request = VideoEnhanceRequest(1000, 1000, url)
+request = VideoEnhanceRequest(1001, 1001, url)
 
 request = request.__dict__
 
