@@ -146,7 +146,7 @@ def main(url: str, request_id: str):
         return None, "failed", "Video enhancement failed due to invalid url"
     
     interpolate = True
-    if fps > 35:
+    if fps > 50:
         interpolate = False
 
     
@@ -175,7 +175,7 @@ def main(url: str, request_id: str):
         p3.start()
     
     else:
-        p1 = Thread(target=frame_interpolation, args=(vfiQ, enhanceQ,), daemon=True)
+        # p1 = Thread(target=frame_interpolation, args=(vfiQ, enhanceQ,), daemon=True)
         p2 = Thread(target=frame_enhance, args=(enhanceQ, resultQ), daemon=True)
         p3 = Thread(target=video_output, args=(resultQ, request_id), daemon=True)
 

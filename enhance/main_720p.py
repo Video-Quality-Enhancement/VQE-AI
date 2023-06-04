@@ -143,7 +143,7 @@ def main(url: str, request_id: str):
         return None, "failed", "Video enhancement failed due to invalid url"
     
     interpolate = True
-    if fps > 35:
+    if fps > 50:
         interpolate = False
 
     
@@ -195,7 +195,8 @@ def main(url: str, request_id: str):
 
     # cv2.destroyWindow('original')
 
-    p1.join()
+    if interpolate:
+        p1.join()
     p2.join()
     p3.join()
 
