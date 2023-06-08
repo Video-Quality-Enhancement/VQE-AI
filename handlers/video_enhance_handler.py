@@ -42,8 +42,8 @@ def video_enhance_handler_360p():
     # video_enhance_consumer(queue, routing_key, enhance_360p_video)
 
 def video_enhance_handler_240p():
-    queue = "360p_queue"
-    routing_key = "360p"
+    queue = "240p_queue"
+    routing_key = "240p"
     while True:
         try:
             video_enhance_consumer(queue, routing_key, enhance_240p_video)
@@ -55,8 +55,8 @@ def video_enhance_handler_240p():
             continue
 
 def video_enhance_handler_144p():
-    queue = "360p_queue"
-    routing_key = "360p"
+    queue = "144p_queue"
+    routing_key = "144p"
     while True:
         try:
             video_enhance_consumer(queue, routing_key, enhance_144p_video)
