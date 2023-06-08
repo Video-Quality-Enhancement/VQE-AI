@@ -4,7 +4,7 @@ from enhance.realesrgan.archs.srvgg_arch import SRVGGNetCompact
 # from basicsr.utils.download_util import load_file_from_url
 
 class esrgan:
-    def __init__(self, model_name: str = "realesr-general-x4v3", gpu_id: int = None) -> None:
+    def __init__(self, model_name: str = "realesr-general-wdn-x4v3", gpu_id: int = None) -> None:
         model = SRVGGNetCompact(num_in_ch=3, num_out_ch=3, num_feat=64, num_conv=32, upscale=4, act_type='prelu')
         model_path = os.path.join('enhance/model_weights/esrgan', model_name + '.pth')
         # file_url = [
