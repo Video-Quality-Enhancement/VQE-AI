@@ -115,10 +115,13 @@ def video_output(resultQ: Queue, request_id: str):
 
     # merge the audio and video
     print("Merging audio and video...")
-    subprocess.run(
-        f'ffmpeg -y -i {enhance_fname} -i {audio_path} -c:v copy -c:a copy -map 0:v:0 -map 1:a:0 -shortest {filename}', shell=True)
-
-    enhanced_video_url = upload_file.upload_file(filename)
+    try:
+        subprocess.run(
+            f'ffmpeg -y -i {enhance_fname} -i {audio_path} -c:v copy -c:a copy -map 0:v:0 -map 1:a:0 -shortest {filename}', shell=True)
+        
+        enhanced_video_url = upload_file.upload_file(filename)
+    except FileNotFoundError:
+        enhanced_video_url = upload_file.upload_file(enhance_fname)
     print("Video Enhancement Completed..!!")
 
 

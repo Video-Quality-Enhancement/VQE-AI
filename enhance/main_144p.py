@@ -82,18 +82,14 @@ def frame_enhance(enhanceQ: Queue, vfiQ: Queue):
 def video_output(resultQ: Queue, request_id: str):
     global fps, enhanced_video_url
 
-    i = 0
-    output_path = f'enhance/output/output-{i}'
-    # Create a directory to store the frames
-    while os.path.exists(output_path):
-        i += 1
-        output_path = f'enhance/output/output-{i}'
+    # Create a directory to store the enhanced video
+    output_path = f'enhance/.temp/{request_id}/video'
+    os.makedirs(output_path, exist_ok=True)
 
-    os.makedirs(output_path)
     enhance_fname = f'{output_path}/enhanced.mp4'
     filename = f'{output_path}/{request_id}.mp4'
 
-    audio_path = f'enhance/.temp/audio/{request_id}.m4a'
+    audio_path = f'enhance/.temp/{request_id}/audio/{request_id}.m4a'
 
     video_out_writer = None
 
@@ -118,10 +114,14 @@ def video_output(resultQ: Queue, request_id: str):
 
     # merge the audio and video
     print("Merging audio and video...")
-    subprocess.run(
-        f'ffmpeg -y -i {enhance_fname} -i {audio_path} -c:v copy -c:a copy -map 0:v:0 -map 1:a:0 -shortest {filename}', shell=True)
-
-    enhanced_video_url = upload_file.upload_file(filename)
+    try:
+        subprocess.run(
+            f'ffmpeg -y -i {enhance_fname} -i {audio_path} -c:v copy -c:a copy -map 0:v:0 -map 1:a:0 -shortest {filename}', shell=True)
+        
+        enhanced_video_url = upload_file.upload_file(filename)
+    except FileNotFoundError:
+        enhanced_video_url = upload_file.upload_file(enhance_fname)
+    
     print("Video Enhancement Completed..!!")
 
 

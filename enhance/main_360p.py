@@ -4,9 +4,10 @@ import time
 import subprocess
 from queue import Queue
 from threading import Thread
+from concurrent.futures import ThreadPoolExecutor
 
 from .VideoESRGAN import esrgan
-from .GoogleFiLM import google_film_model
+from .GoogleFiLM import google_film_model, google_film_onnx
 
 from .drive import upload_file
 
@@ -14,7 +15,7 @@ from .drive import upload_file
 def frame_interpolation(vfiQ: Queue, enhanceQ: Queue):
     global total_frames
     # torch.set_default_tensor_type(torch.cuda.HalfTensor)
-    film_model = google_film_model()
+    film_model = google_film_onnx()
     frame1 = frame2 = None
 
     frame_id = 0
@@ -49,6 +50,8 @@ def frame_interpolation(vfiQ: Queue, enhanceQ: Queue):
     except Exception as e:
         print('\nframe_iterpolation stopped due to:', e)
 
+    del film_model
+
     # cv2.destroyWindow('interpolated')
 
 
@@ -64,14 +67,17 @@ def frame_enhance(enhanceQ: Queue, resultQ: Queue):
             frame_id += 1
 
             start_time = time.time()
-            output_frame = esrgan_model.enhance(frame)
-            print(f"Enhanced frame no. {frame_id} in {time.time() - start_time} seconds")
+            with ThreadPoolExecutor() as executor:
+                output_frame = executor.submit(esrgan_model.enhance, frame)
+                # output_frame = future.result()
+                # output_frame = esrgan_model.enhance(frame)
+                print(f"Enhanced frame no. {frame_id} in {time.time() - start_time} seconds")
 
-            # height, width, _ = frame.shape
-            # output_frame = cv2.resize(output_frame, (int(width/height *480), 480))
-            resultQ.put(output_frame)
-            # cv2.imshow('enhanced', output_frame)
-            # cv2.waitKey(1)
+                # height, width, _ = frame.shape
+                # output_frame = cv2.resize(output_frame, (int(width/height *480), 480))
+                resultQ.put(output_frame)
+                # cv2.imshow('enhanced', output_frame)
+                # cv2.waitKey(1)
 
         print("Frame Enhancement Completed")
     except Exception as e:
@@ -101,7 +107,7 @@ def video_output(resultQ: Queue, request_id: str):
         print("Writing frames to video...")
         # print(f"resultQ.empty(): {resultQ.empty()}, frame_no: {frame_no}, total_frames: {total_frames}")
         while frame_no < ((total_frames * 2) - 1) or not resultQ.empty():
-            frame = resultQ.get()
+            frame = resultQ.get().result()
             frame_no += 1
             # print(f"frame_no: {frame_no}")
 
@@ -118,10 +124,15 @@ def video_output(resultQ: Queue, request_id: str):
 
     # merge the audio and video
     print("Merging audio and video...")
-    subprocess.run(
-        f'ffmpeg -y -i {enhance_fname} -i {audio_path} -c:v copy -c:a copy -map 0:v:0 -map 1:a:0 -shortest {filename}', shell=True)
 
-    enhanced_video_url = upload_file.upload_file(filename)
+    try:
+        subprocess.run(
+            f'ffmpeg -y -i {enhance_fname} -i {audio_path} -c:v copy -c:a copy -map 0:v:0 -map 1:a:0 -shortest {filename}', shell=True)
+        
+        enhanced_video_url = upload_file.upload_file(filename)
+    except FileNotFoundError:
+        enhanced_video_url = upload_file.upload_file(enhance_fname)
+
     print("Video Enhancement Completed..!!")
 
 
