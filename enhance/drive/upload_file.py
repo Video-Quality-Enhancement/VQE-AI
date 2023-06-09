@@ -36,13 +36,13 @@ def get_drive_service():
 #     print(f'Updated File With ID: {file.get("id")}')
 
 
-def upload_file(path: str):
+def upload_file(filepath: str, filename: str = None):
     file_metadata = {
-            'name': os.path.split(path)[1],
+            'name': os.path.split(filepath)[1] if filename is None else os.path.split(filename)[1],
             'parents': [os.getenv("OUTPUT_FOLDER_ID")]
         }
     drive = get_drive_service()
-    media = MediaFileUpload(path,
+    media = MediaFileUpload(filepath,
                             mimetype='video/mp4',
                             resumable=True)
     
