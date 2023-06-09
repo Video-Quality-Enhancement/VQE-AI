@@ -10,7 +10,7 @@ def enhance_720p_video(video_enhance_request: VideoEnhanceRequest) -> EnhancedVi
         enhanced_video_url, status, statusMessage = main_720p.main(video_enhance_request.videoUrl, video_enhance_request.requestId)
     except Exception as e:
         enhanced_video_url = None
-        status = "failed"
+        status = "FAILED"
         statusMessage = f"Video enhancement failed due to: {e}"
 
     # create response object
