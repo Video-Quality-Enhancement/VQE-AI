@@ -121,7 +121,7 @@ def video_output(resultQ: Queue, request_id: str):
         
         enhanced_video_url = upload_file.upload_file(filename)
     except FileNotFoundError:
-        enhanced_video_url = upload_file.upload_file(enhance_fname)
+        enhanced_video_url = upload_file.upload_file(enhance_fname, filename)
     print("Video Enhancement Completed..!!")
 
 
@@ -143,7 +143,7 @@ def main(url: str, request_id: str):
         print(f"Video Duration: {video_duration} seconds")
     except Exception as e:
         print(f"Exception: {e}")
-        return None, "failed", "Video enhancement failed due to invalid url"
+        return None, "FAILED", "Video enhancement failed due to invalid url"
     
     interpolate = True
     if fps > 50:
@@ -206,4 +206,4 @@ def main(url: str, request_id: str):
     print(
         f"Video Duration: {video_duration} seconds, Time taken to enhance: {time.time() - start_time} seconds")
 
-    return enhanced_video_url, "success", "Video enhanced successfully"
+    return enhanced_video_url, "COMPLETED", "Video enhanced successfully"

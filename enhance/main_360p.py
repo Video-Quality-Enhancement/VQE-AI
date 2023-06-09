@@ -89,7 +89,7 @@ def frame_enhance(enhanceQ: Queue, resultQ: Queue):
 
 
 def video_output(resultQ: Queue, request_id: str):
-    global fps, enhanced_video_url, total_frames
+    global fps, enhanced_video_details, total_frames
     
     # Create a directory to store the enhanced video
     output_path = f'enhance/.temp/{request_id}/video'
@@ -112,6 +112,7 @@ def video_output(resultQ: Queue, request_id: str):
             # print(f"frame_no: {frame_no}")
 
             if video_out_writer is None:
+                enhanced_video_details['shape'] = (frame.shape[1], frame.shape[0])
                 video_out_writer = cv2.VideoWriter(enhance_fname, cv2.VideoWriter_fourcc(*'mp4v'), fps*2, (frame.shape[1], frame.shape[0]))
 
             # cv2.imwrite(f'{output_path}/frame{frame_no}.jpg', frame)
@@ -129,15 +130,15 @@ def video_output(resultQ: Queue, request_id: str):
         subprocess.run(
             f'ffmpeg -y -i {enhance_fname} -i {audio_path} -c:v copy -c:a copy -map 0:v:0 -map 1:a:0 -shortest {filename}', shell=True)
         
-        enhanced_video_url = upload_file.upload_file(filename)
+        enhanced_video_details['url'] = upload_file.upload_file(filename)
     except FileNotFoundError:
-        enhanced_video_url = upload_file.upload_file(enhance_fname)
+        enhanced_video_details['url'] = upload_file.upload_file(enhance_fname)
 
-    print("Video Enhancement Completed..!!")
+    print(f"Video Enhancement Completed..!! \nEnhanced Video URL: {enhanced_video_details['url']} \nEnhanced Video Dimensions: {enhanced_video_details['shape']}")
 
 
 def main(url: str, request_id: str):
-    global fps, total_frames, enhanced_video_url
+    global fps, total_frames, enhanced_video_details
     # torch.set_default_tensor_type(torch.cuda.HalfTensor)
 
     try:
@@ -155,7 +156,7 @@ def main(url: str, request_id: str):
         print(f"Video Duration: {video_duration} seconds")
     except Exception as e:
         print(f"Exception: {e}")
-        return None, "failed", "Video enhancement failed due to invalid url"
+        return None, "FAILED", "Video enhancement failed due to invalid url"
     
     interpolate = True
     if fps > 50:
@@ -169,7 +170,10 @@ def main(url: str, request_id: str):
     # get the audio stream using ffmpeg
     subprocess.Popen(f'ffmpeg -y -i {url} -vn -acodec copy {audio_path}/{request_id}.m4a', shell=True)
 
-    enhanced_video_url = None
+    enhanced_video_details = {
+        'url': None,
+        'shape': None
+    }
 
     frame_id = 0
 
@@ -220,7 +224,8 @@ def main(url: str, request_id: str):
         f"Video Duration: {video_duration} seconds, Time taken to enhance: {time.time() - start_time} seconds")
 
     # sys.exit(0)
-    return enhanced_video_url, "success", "Video enhanced successfully"
+    # return enhanced_video_details['url'], enhanced_video_details['shape'], "COMPLETED", "Video enhanced successfully"
+    return enhanced_video_details['url'], "COMPLETED", "Video enhanced successfully"
 
 
 # if __name__ == '__main__':
