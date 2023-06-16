@@ -2,11 +2,12 @@ import json
 from .video_enhance_request import VideoEnhanceRequest
 
 class EnhancedVideoResponse:
-    def __init__(self, video_enhance_request: VideoEnhanceRequest, enhancedVideoUrl: str, status: str, statusMessage: str):
+    def __init__(self, video_enhance_request: VideoEnhanceRequest, enhancedVideoUrl: str, enhancedVideoQuality:str, status: str, statusMessage: str):
         self.userId = video_enhance_request.userId
         self.requestId = video_enhance_request.requestId
-        self.videoUrl = video_enhance_request.videoUrl
+        # self.videoUrl = video_enhance_request.videoUrl
         self.enhancedVideoUrl = enhancedVideoUrl
+        self.enhancedVideoQuality = enhancedVideoQuality
         self.status = status
         self.statusMessage = statusMessage
     
