@@ -10,7 +10,7 @@ def get_drive_service():
     return service
 
 
-def upload_file(filepath: str):
+def upload(filepath: str):
     file_metadata = {
             'name': os.path.split(filepath)[1],
             'parents': [os.getenv("OUTPUT_FOLDER_ID")]
@@ -44,4 +44,4 @@ def upload_file(filepath: str):
 if __name__ == '__main__':
     from dotenv import load_dotenv
     load_dotenv()
-    upload_file("enhance/output/output-2/enhanced_video.mp4")
+    upload("enhance/output/output-2/enhanced_video.mp4")
