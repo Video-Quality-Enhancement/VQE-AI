@@ -147,6 +147,23 @@ def video_output(resultQ: Queue, request_id: str):
     except Exception as e:
         print('\nAudio Merge stopped due to:', e)
 
+    # from enhanced_video_details['shape'] convert to string 144p, 240p, 360p, 480p, 720p, 1080p, 2K
+    area = enhanced_video_details['shape'][0] * enhanced_video_details['shape'][1]
+    if area <= 256*144:
+        enhanced_video_details['shape'] = '144p'
+    elif area <= 426*240:
+        enhanced_video_details['shape'] = '240p'
+    elif area <= 640*360:
+        enhanced_video_details['shape'] = '360p'
+    elif area <= 854*480:
+        enhanced_video_details['shape'] = '480p'
+    elif area <= 1280*720:
+        enhanced_video_details['shape'] = '720p'
+    elif area <= 1920*1080:
+        enhanced_video_details['shape'] = '1080p'
+    else:
+        enhanced_video_details['shape'] = '>1080p'
+
     print(f"Video Enhancement Completed..!! \nEnhanced Video URL: {enhanced_video_details['url']} \nEnhanced Video Dimensions: {enhanced_video_details['shape']}")
 
 
@@ -239,8 +256,8 @@ def main(url: str, request_id: str):
     print(f"Enhanced Video URL: {enhanced_video_details['url']}")
 
     # sys.exit(0)
-    # return enhanced_video_details['url'], enhanced_video_details['shape'], "COMPLETED", "Video enhanced successfully"
-    return enhanced_video_details['url'], "COMPLETED", "Video enhanced successfully"
+    return enhanced_video_details['url'], enhanced_video_details['shape'], "SUCCESS", "Video enhanced successfully"
+    # return enhanced_video_details['url'], "SUCCESS", "Video enhanced successfully"
 
 
 # if __name__ == '__main__':
