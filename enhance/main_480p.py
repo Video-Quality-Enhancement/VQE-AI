@@ -155,8 +155,14 @@ def video_output(resultQ: Queue, request_id: str):
         enhanced_video_details['shape'] = '720p'
     elif area <= 1920*1080:
         enhanced_video_details['shape'] = '1080p'
+    elif area <= 2560*1440:
+        enhanced_video_details['shape'] = '2K'
+    elif area <= 3840*2160:
+        enhanced_video_details['shape'] = '4K'
+    elif area <= 7680*4320:
+        enhanced_video_details['shape'] = '8K'
     else:
-        enhanced_video_details['shape'] = '>1080p'
+        enhanced_video_details['shape'] = '8K+'
 
     print(f"Video Enhancement Completed..!! \nEnhanced Video URL: {enhanced_video_details['url']} \nEnhanced Video Dimensions: {enhanced_video_details['shape']}")
 
