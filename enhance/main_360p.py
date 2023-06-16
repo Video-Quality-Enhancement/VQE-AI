@@ -10,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 from .VideoESRGAN import esrgan
 from .GoogleFiLM import google_film_model, google_film_onnx
 
-from .drive import upload_file
+from .drive.upload_gcs import GoogleCloudStorage
 
 
 def frame_interpolation(vfiQ: Queue, enhanceQ: Queue):
@@ -91,6 +91,8 @@ def frame_enhance(enhanceQ: Queue, resultQ: Queue):
 
 def video_output(resultQ: Queue, request_id: str):
     global fps, enhanced_video_details, total_frames
+
+    upload_file = GoogleCloudStorage()
     
     # Create a directory to store the enhanced video
     output_path = f'enhance/.temp/{request_id}/video'
@@ -137,9 +139,9 @@ def video_output(resultQ: Queue, request_id: str):
 
             ffmpeg.concat(input_video, input_audio, v=1, a=1).output(filename).run()
             
-            enhanced_video_details['url'] = upload_file.upload_file(filename)
+            enhanced_video_details['url'] = upload_file.upload(filename)
         else:
-            enhanced_video_details['url'] = upload_file.upload_file(enhance_fname)
+            enhanced_video_details['url'] = upload_file.upload(enhance_fname)
     except Exception as e:
         print('\nAudio Merge stopped due to:', e)
 
