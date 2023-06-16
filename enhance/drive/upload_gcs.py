@@ -11,8 +11,12 @@ class GoogleCloudStorage:
         self.bucket = self.storage_client.get_bucket(os.getenv("BUCKET_NAME"))
 
     def upload(self, filepath: str, emailid: str=None):
-        myfile_blob = self.bucket.blob(filepath)
-        myfile_blob.upload_from_filename(filepath)
+        # get filename from filepath
+        filename = f"enhanced/{filepath.split('/')[-1]}"
+
+        # upload the file to the bucket
+        blob = self.bucket.blob(filename)
+        blob.upload_from_filename(filepath)
 
         print(f"File {filepath} uploaded to {os.getenv('BUCKET_NAME')}")
 
@@ -24,7 +28,7 @@ class GoogleCloudStorage:
         # url = myfile_blob.generate_signed_url(expiration_time, method="GET")
         # url = myfile_blob._get_download_url
 
-        return f"https://storage.googleapis.com/{os.getenv('BUCKET_NAME')}/enhanced/{filepath}"
+        return f"https://storage.googleapis.com/{os.getenv('BUCKET_NAME')}/{filename}"
     
     def list_files(self):
         blobs = self.bucket.list_blobs()
