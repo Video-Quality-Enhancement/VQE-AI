@@ -1,7 +1,7 @@
 import json
 
 class VideoEnhanceRequest:
-    def __init__(self, userId, requestId, videoUrl):
+    def __init__(self, userId, requestId, videoUrl, videoQuality=None):
         self.userId = userId
         self.requestId = requestId
         self.videoUrl = videoUrl
