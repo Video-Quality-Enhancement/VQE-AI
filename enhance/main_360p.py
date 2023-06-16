@@ -2,6 +2,7 @@ import os
 import cv2
 import time
 import subprocess
+import ffmpeg
 from queue import Queue
 from threading import Thread
 from concurrent.futures import ThreadPoolExecutor
@@ -127,12 +128,20 @@ def video_output(resultQ: Queue, request_id: str):
     print("Merging audio and video...")
 
     try:
-        subprocess.run(
-            f'ffmpeg -y -i {enhance_fname} -i {audio_path} -c:v copy -c:a copy -map 0:v:0 -map 1:a:0 -shortest {filename}', shell=True)
-        
-        enhanced_video_details['url'] = upload_file.upload_file(filename)
-    except FileNotFoundError:
-        enhanced_video_details['url'] = upload_file.upload_file(enhance_fname)
+        if os.path.exists(audio_path):
+            # subprocess.run(
+            #     f'ffmpeg -y -i {enhance_fname} -i {audio_path} -c:v copy -c:a copy -shortest {filename}', shell=True)
+
+            input_video = ffmpeg.input(enhance_fname)
+            input_audio = ffmpeg.input(audio_path)
+
+            ffmpeg.concat(input_video, input_audio, v=1, a=1).output(filename).run()
+            
+            enhanced_video_details['url'] = upload_file.upload_file(filename)
+        else:
+            enhanced_video_details['url'] = upload_file.upload_file(enhance_fname)
+    except Exception as e:
+        print('\nAudio Merge stopped due to:', e)
 
     print(f"Video Enhancement Completed..!! \nEnhanced Video URL: {enhanced_video_details['url']} \nEnhanced Video Dimensions: {enhanced_video_details['shape']}")
 
@@ -222,6 +231,8 @@ def main(url: str, request_id: str):
 
     print(
         f"Video Duration: {video_duration} seconds, Time taken to enhance: {time.time() - start_time} seconds")
+    
+    print(f"Enhanced Video URL: {enhanced_video_details['url']}")
 
     # sys.exit(0)
     # return enhanced_video_details['url'], enhanced_video_details['shape'], "COMPLETED", "Video enhanced successfully"
