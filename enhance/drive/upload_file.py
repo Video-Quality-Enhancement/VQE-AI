@@ -10,35 +10,9 @@ def get_drive_service():
     return service
 
 
-# def print_mime_type():
-#     file_id="1OxH4i9cjqPedpy-khyJzBhEFb8Pqhv2Q" # ! trailing comma can cause problems in python and google drive api
-#     drive = get_drive_service()
-#     request = drive.files().get(fileId=file_id, fields='mimeType').execute()
-#     print(request)
-
-
-# def update_weights_file():
-#     file_id="1OxH4i9cjqPedpy-khyJzBhEFb8Pqhv2Q"
-#     local_file_path="model_weights/vfi/vfi-last_step_weights.pt"
-
-#     drive = get_drive_service()
-#     media = MediaFileUpload(local_file_path,
-#                             mimetype='application/x-zip',
-#                             resumable=True)
-    
-#     print("Starting to upated the weights file...")
-    
-#     file = drive.files().update(fileId=file_id,
-#                                 body={},
-#                                 media_body=media,
-#                                 fields='id').execute()
-    
-#     print(f'Updated File With ID: {file.get("id")}')
-
-
-def upload_file(filepath: str, filename: str = None):
+def upload_file(filepath: str):
     file_metadata = {
-            'name': os.path.split(filepath)[1] if filename is None else os.path.split(filename)[1],
+            'name': os.path.split(filepath)[1],
             'parents': [os.getenv("OUTPUT_FOLDER_ID")]
         }
     drive = get_drive_service()
@@ -47,12 +21,17 @@ def upload_file(filepath: str, filename: str = None):
                             resumable=True)
     
     print("Uploading...")
+
+    # file = drive.files().create(body=file_metadata,
+    #                             media_body=media,
+    #                             fields='webViewLink').execute()
     
     file = drive.files().create(body=file_metadata,
                                 media_body=media,
-                                fields='webViewLink').execute()
+                                fields='id').execute()
     
-    enhanced_video_url = file.get('webViewLink')
+    # enhanced_video_url = file.get('webViewLink')
+    enhanced_video_url = f"https://drive.google.com/uc?id={file.get('id')}"
     print(f'Uploaded File With url: {enhanced_video_url}')
 
     return enhanced_video_url
