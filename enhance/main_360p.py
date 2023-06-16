@@ -141,7 +141,9 @@ def video_output(resultQ: Queue, request_id: str):
             
             enhanced_video_details['url'] = upload_file.upload(filename)
         else:
-            enhanced_video_details['url'] = upload_file.upload(enhance_fname)
+            # rename the file enhance_fname to filename
+            os.rename(enhance_fname, filename)
+            enhanced_video_details['url'] = upload_file.upload(filename)
     except Exception as e:
         print('\nAudio Merge stopped due to:', e)
 
