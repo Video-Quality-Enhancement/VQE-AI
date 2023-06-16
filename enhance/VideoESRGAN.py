@@ -24,7 +24,8 @@ class esrgan:
             model=model,
             scale=2,
             dni_weight=None,
-            gpu_id=gpu_id
+            gpu_id=gpu_id,
+            half=True
                 )
         
     def enhance(self, image):
