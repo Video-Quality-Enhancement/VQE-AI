@@ -217,8 +217,8 @@ def main(url: str, request_id: str):
 
     # cv2.destroyWindow('original')
 
-    # p1.join(timeout=30)
-    # p2.join(timeout=30)
+    p1.join(timeout=30)
+    p2.join(timeout=30)
     p3.join()
 
     print(
