@@ -66,7 +66,7 @@ def frame_enhance(enhanceQ: Queue, vfiQ: Queue):
             output_frame = esrgan_model.enhance(frame)
             print(f"Enhanced frame no. {frame_id} in {time.time() - start_time} seconds")
 
-            height, width, _ = frame.shape
+            # height, width, _ = frame.shape
             # max_height = 480
             # output_frame = cv2.resize(output_frame, (int(width/height *max_height), max_height))
             vfiQ.put(output_frame)
@@ -103,6 +103,7 @@ def video_output(resultQ: Queue, request_id: str):
             # print(f"frame_no: {frame_no}")
 
             if video_out_writer is None:
+                enhanced_video_details['shape'] = (frame.shape[1], frame.shape[0])
                 video_out_writer = cv2.VideoWriter(enhance_fname, cv2.VideoWriter_fourcc(*'mp4v'), fps*2, (frame.shape[1], frame.shape[0]))
 
             # cv2.imwrite(f'{output_path}/frame{frame_no}.jpg', frame)
