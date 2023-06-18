@@ -235,6 +235,7 @@ def main(url: str, request_id: str):
 
             # cv2.imshow('original', frame)
             # cv2.waitKey(1)
+            
             print(frame_id, end=" ")
 
     except:
