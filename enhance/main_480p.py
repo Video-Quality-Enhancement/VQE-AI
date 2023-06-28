@@ -169,7 +169,6 @@ def video_output(resultQ: Queue, request_id: str):
 
 def main(url: str, request_id: str):
     global fps, total_frames, enhanced_video_details
-    # torch.set_default_tensor_type(torch.cuda.HalfTensor)
 
     try:
         cap = cv2.VideoCapture(url)
@@ -190,7 +189,6 @@ def main(url: str, request_id: str):
     interpolate = True
     if fps > 50:
         interpolate = False
-
     
     # Create a directory to store the audio
     audio_path = f'enhance/.temp/{request_id}/audio'
@@ -233,12 +231,9 @@ def main(url: str, request_id: str):
                 enhanceQ.put(frame)
             frame_id += 1
 
-            # cv2.imshow('original', frame)
-            # cv2.waitKey(1)
             print(frame_id, end=" ")
 
     except:
-        # cv2.destroyWindow('original')
         print("Feed Ended or Error occured")
 
     # cv2.destroyWindow('original')
